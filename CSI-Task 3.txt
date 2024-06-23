@@ -1,0 +1,378 @@
+Task 1-
+
+SELECT Start_Date, MIN(End_Date)
+FROM (
+    SELECT Start_Date
+    FROM Projects
+    WHERE Start_Date NOT IN (SELECT End_Date FROM Projects)
+) AS s,
+(
+    SELECT End_Date
+    FROM Projects
+    WHERE End_Date NOT IN (SELECT Start_Date FROM Projects)
+) AS e
+WHERE Start_Date < End_Date
+GROUP BY Start_Date
+ORDER BY DATEDIFF(day, Start_Date, MIN(End_Date)), Start_Date;
+
+
+
+
+Task 2-
+
+SELECT s.Name
+FROM Students s
+JOIN Friends f ON s.ID = f.ID
+JOIN Packages p1 ON s.ID = p1.ID
+JOIN Packages p2 ON f.Friend_ID = p2.ID
+WHERE p1.Salary < p2.Salary
+ORDER BY p2.Salary;
+
+
+Task 3-
+
+SELECT DISTINCT f1.X, f1.Y
+FROM functions f1
+JOIN functions f2 ON f1.X = f2.Y AND f1.Y = f2.X
+WHERE f1.X <= f1.Y
+ORDER BY f1.X;
+
+Task 4-
+
+SELECT
+    c.Contest_id,
+    c.Hacker_id,
+    c.Name,
+    SUM(ss.Total_submission) AS Total_Submissions,
+    SUM(ss.Total_accepted_submissions) AS Total_Accepted_Submissions,
+    SUM(vs.Total_views) AS Total_Views,
+    SUM(vs.Total_unique_views) AS Total_Unique_Views
+FROM
+    Contests c
+JOIN
+    Colleges cl ON c.Contest_id = cl.Contest_id
+JOIN
+    Challenges ch ON cl.College_id = ch.College_id
+JOIN
+    View_status vs ON ch.Challenge_id = vs.Challenge_id
+JOIN
+    Submission_status ss ON ch.Challenge_id = ss.Challenge_id
+GROUP BY
+    c.Contest_id,
+    c.Hacker_id,
+    c.Name
+HAVING
+    SUM(ss.Total_submission) > 0
+    OR SUM(ss.Total_accepted_submissions) > 0
+    OR SUM(vs.Total_views) > 0
+    OR SUM(vs.Total_unique_views) > 0
+ORDER BY
+    c.Contest_id;
+
+
+Task 5-
+
+WITH DailySubmissionCounts AS (
+    SELECT
+        submission_date,
+        hacker_id,
+        COUNT(*) AS num_submissions,
+        RANK() OVER (PARTITION BY submission_date ORDER BY COUNT(*) DESC, hacker_id) AS submission_rank
+    FROM
+        Submissions
+    GROUP BY
+        submission_date,
+        hacker_id
+),
+UniqueHackersPerDay AS (
+    SELECT
+        submission_date,
+        COUNT(DISTINCT hacker_id) AS num_unique_hackers
+    FROM
+        Submissions
+    GROUP BY
+        submission_date
+)
+SELECT
+    DSC.submission_date,
+    UHD.num_unique_hackers,
+    DSC.hacker_id,
+    H.name
+FROM
+    DailySubmissionCounts DSC
+JOIN
+    UniqueHackersPerDay UHD ON DSC.submission_date = UHD.submission_date
+JOIN
+    Hackers H ON DSC.hacker_id = H.hacker_id
+WHERE
+    DSC.submission_rank = 1
+ORDER BY
+    DSC.submission_date;
+
+Task 6-
+
+SELECT ROUND(ABS(MAX(STATION.LAT_N) - MIN(STATION.LAT_N)) + ABS(MAX(STATION.LONG_W) - MIN(STATION.LONG_W)), 4) AS Manhattan_Distance
+FROM STATION;
+
+Task 7-
+
+DECLARE @max_num INT = 1000;
+DECLARE @num INT = 2;
+DECLARE @primes VARCHAR(MAX) = '';
+
+WHILE @num <= @max_num
+BEGIN
+    DECLARE @is_prime BIT = 1;
+    DECLARE @divisor INT = 2;
+
+    WHILE @divisor <= SQRT(@num)
+    BEGIN
+        IF @num % @divisor = 0
+        BEGIN
+            SET @is_prime = 0;
+            BREAK;
+        END
+        SET @divisor = @divisor + 1;
+    END
+
+    IF @is_prime = 1
+    BEGIN
+        SET @primes = CONCAT(@primes, '&', CAST(@num AS VARCHAR));
+    END
+
+    SET @num = @num + 1;
+END
+
+SET @primes = SUBSTRING(@primes, 2, LEN(@primes) - 1);
+
+SELECT @primes AS Primes;
+
+Task 8-
+
+WITH RankedOccupation AS (
+    SELECT
+        Name,
+        Occupation,
+        ROW_NUMBER() OVER (PARTITION BY Occupation ORDER BY Name) AS row_num
+    FROM OCCUPATION
+)
+SELECT
+    MAX(CASE WHEN Occupation = 'Doctor' THEN Name ELSE NULL END) AS Doctor,
+    MAX(CASE WHEN Occupation = 'Professor' THEN Name ELSE NULL END) AS Professor,
+    MAX(CASE WHEN Occupation = 'Singer' THEN Name ELSE NULL END) AS Singer,
+    MAX(CASE WHEN Occupation = 'Actor' THEN Name ELSE NULL END) AS Actor
+FROM RankedOccupation
+GROUP BY row_num;
+
+
+Task 9-
+
+SELECT N,
+       CASE WHEN P IS NULL THEN 'Root'
+            WHEN N IN (SELECT P FROM BST) THEN 'Inner'
+            ELSE 'Leaf'
+       END AS node_type
+FROM BST
+ORDER BY N;
+
+
+Task 10-
+
+SELECT
+    c.company_code,
+    c.founder,
+    COUNT(DISTINCT lm.lead_manager_code) AS total_lead_managers,
+    COUNT(DISTINCT sm.senior_manager_code) AS total_senior_managers,
+    COUNT(DISTINCT m.manager_code) AS total_managers,
+    COUNT(DISTINCT e.employee_code) AS total_employees
+FROM
+    Company c
+LEFT JOIN
+    Lead_Manager lm ON c.company_code = lm.company_code
+LEFT JOIN
+    Senior_Manager sm ON c.company_code = sm.company_code
+LEFT JOIN
+    Manager m ON c.company_code = m.company_code
+LEFT JOIN
+    Employee e ON c.company_code = e.company_code
+GROUP BY
+    c.company_code, c.founder
+ORDER BY
+    c.company_code;
+
+
+Task 11-
+
+SELECT s.Name
+FROM Students s
+JOIN Friends f ON s.ID = f.ID
+JOIN Packages p1 ON s.ID = p1.ID
+JOIN Packages p2 ON f.Friend_ID = p2.ID
+WHERE p1.Salary < p2.Salary
+ORDER BY p2.Salary;
+
+Task 12-
+
+WITH JobFamily AS (
+    SELECT 'Engineering' AS JobFamilyName, 5000 AS Cost, 'India' AS Region
+    UNION ALL
+    SELECT 'Engineering' AS JobFamilyName, 8000 AS Cost, 'International' AS Region
+    UNION ALL
+    SELECT 'Marketing' AS JobFamilyName, 3000 AS Cost, 'India' AS Region
+    UNION ALL
+    SELECT 'Marketing' AS JobFamilyName, 6000 AS Cost, 'International' AS Region
+    UNION ALL
+    SELECT 'Sales' AS JobFamilyName, 4000 AS Cost, 'India' AS Region
+    UNION ALL
+    SELECT 'Sales' AS JobFamilyName, 7000 AS Cost, 'International' AS Region
+),
+TotalCostByJobFamily AS (
+    SELECT
+        JobFamilyName,
+        SUM(CASE WHEN Region = 'India' THEN Cost ELSE 0 END) AS CostIndia,
+        SUM(CASE WHEN Region = 'International' THEN Cost ELSE 0 END) AS CostInternational
+    FROM JobFamily
+    GROUP BY JobFamilyName
+)
+SELECT
+    JobFamilyName,
+    CostIndia,
+    CostInternational,
+    ROUND((CostInternational - CostIndia) / NULLIF(CostIndia, 0) * 100, 2) AS PercentageInternational,
+    ROUND((CostInternational - CostIndia) / NULLIF(CostIndia, 0) * 100, 2) AS PercentageIndia
+FROM
+    TotalCostByJobFamily
+ORDER BY
+    JobFamilyName;
+
+Task 13-
+
+WITH MonthlyData AS (
+    SELECT '2023-01' AS Month, 5000 AS Cost, 10000 AS Revenue UNION ALL
+    SELECT '2023-02' AS Month, 5500 AS Cost, 11000 AS Revenue UNION ALL
+    SELECT '2023-03' AS Month, 6000 AS Cost, 12000 AS Revenue
+    -- Add more data for other months if needed
+)
+SELECT
+    Month,
+    Cost,
+    Revenue,
+    ROUND(Cost * 100.0 / NULLIF(Revenue, 0), 2) AS CostToRevenueRatio
+FROM MonthlyData;
+
+Task 14-
+
+WITH EmployeeData AS (
+    SELECT 'SubBand_A' AS SubBand, 'Employee_1' AS EmployeeID UNION ALL
+    SELECT 'SubBand_A' AS SubBand, 'Employee_2' AS EmployeeID UNION ALL
+    SELECT 'SubBand_B' AS SubBand, 'Employee_3' AS EmployeeID UNION ALL
+    SELECT 'SubBand_B' AS SubBand, 'Employee_4' AS EmployeeID UNION ALL
+    SELECT 'SubBand_B' AS SubBand, 'Employee_5' AS EmployeeID UNION ALL
+    SELECT 'SubBand_C' AS SubBand, 'Employee_6' AS EmployeeID UNION ALL
+    SELECT 'SubBand_C' AS SubBand, 'Employee_7' AS EmployeeID
+)
+
+SELECT 
+    SubBand,
+    COUNT(EmployeeID) AS Headcount,
+    ROUND((COUNT(EmployeeID) * 100.0) / (SELECT COUNT(*) FROM EmployeeData), 2) AS Percentage
+FROM EmployeeData
+GROUP BY SubBand
+ORDER BY SubBand;
+
+Task 15-
+
+WITH RankedEmployees AS (
+    SELECT 
+        e.employee_code,
+        s.salary,
+        ROW_NUMBER() OVER (ORDER BY s.salary DESC) AS row_num
+    FROM 
+        Employee e
+    JOIN 
+        Salaries s ON e.employee_code = s.employee_code
+)
+SELECT 
+    employee_code, 
+    salary
+FROM 
+    RankedEmployees
+WHERE 
+    row_num <= 5;
+
+
+Task 16-
+
+UPDATE your_table
+SET column1 = column1 + column2,
+    column2 = column1 - column2,
+    column1 = column1 - column2;
+UPDATE your_table
+SET column1 = CONCAT(column1, column2),
+    column2 = LEFT(column1, LENGTH(column1) - LENGTH(column2)),
+    column1 = RIGHT(column1, LENGTH(column2));
+
+Task 17-
+
+-- Create a SQL Server login--
+
+-- Create a SQL Server login--
+
+CREATE LOGIN MyUserLogin WITH PASSWORD = 'StrongPasswordHere';
+
+-- Switch to the target database--
+
+USE YourDatabaseName;
+
+-- Create a user in the database linked to the login--
+
+CREATE USER MyDatabaseUser FOR LOGIN MyUserLogin;
+
+-- Add the user to the db_owner role--
+
+ALTER ROLE db_owner ADD MEMBER MyDatabaseUser;
+
+Task 18-
+
+-- Calculate the weighted average cost of employees month on month in a Business Unit
+WITH EmployeeCostPerMonth AS (
+    SELECT
+        BU,
+        Month,
+        Year,
+        SUM(MonthlyCost) AS TotalMonthlyCost,
+        COUNT(EmployeeID) AS NumEmployees
+    FROM
+        EmployeeCosts
+    GROUP BY
+        BU, Month, Year
+)
+SELECT
+    BU,
+    Month,
+    Year,
+    TotalMonthlyCost / NumEmployees AS WeightedAvgCost
+FROM
+    EmployeeCostPerMonth
+ORDER BY
+    Year,
+    CASE
+        WHEN Month = 'January' THEN 1
+        WHEN Month = 'February' THEN 2
+        WHEN Month = 'March' THEN 3
+        WHEN Month = 'April' THEN 4
+        WHEN Month = 'May' THEN 5
+        WHEN Month = 'June' THEN 6
+        WHEN Month = 'July' THEN 7
+        WHEN Month = 'August' THEN 8
+        WHEN Month = 'September' THEN 9
+        WHEN Month = 'October' THEN 10
+        WHEN Month = 'November' THEN 11
+        WHEN Month = 'December' THEN 12
+    END;
+
+
+
+
+
+
